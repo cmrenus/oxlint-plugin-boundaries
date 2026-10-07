@@ -1,5 +1,5 @@
 {
-  "name": "oxlint-plugin-boundaries",
+  "name": "@cmrenus/oxlint-plugin-boundaries",
   "version": "0.1.0",
   "description": "Config-driven cross-package / element-type boundaries enforcement for oxlint — a resolver-less JS plugin. Each repo declares its own element table and allow-matrix in `.oxlintrc.json` settings.",
   "keywords": [
@@ -12,15 +12,15 @@
     "oxlint",
     "oxlint-plugin"
   ],
-  "homepage": "https://github.com/paulcedrick/oxlint-plugin-boundaries#readme",
+  "homepage": "https://github.com/cmrenus/oxlint-plugin-boundaries#readme",
   "bugs": {
-    "url": "https://github.com/paulcedrick/oxlint-plugin-boundaries/issues"
+    "url": "https://github.com/cmrenus/oxlint-plugin-boundaries/issues"
   },
   "license": "MIT",
   "author": "Paul Cedrick Artigo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/paulcedrick/oxlint-plugin-boundaries.git"
+    "url": "git+https://github.com/cmrenus/oxlint-plugin-boundaries.git"
   },
   "files": [
     "dist",
@@ -38,6 +38,9 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "tsdown",
