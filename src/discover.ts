@@ -79,23 +79,51 @@ function parseYamlScalar(value: string): string | null {
   return unquoted === trimmed && /^[|>&*!{}[\],]/.test(trimmed) ? null : unquoted;
 }
 
+function splitYamlFlowSequence(value: string): string[] {
+  const items: string[] = [];
+  let start = 0;
+  let quote: "'" | '"' | null = null;
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value[i];
+    if (quote === '"' && char === "\\") {
+      i += 1;
+    } else if (quote && char === quote) {
+      quote = null;
+    } else if (!quote && (char === "'" || char === '"')) {
+      quote = char;
+    } else if (!quote && char === ",") {
+      items.push(value.slice(start, i));
+      start = i + 1;
+    }
+  }
+  items.push(value.slice(start));
+  return items;
+}
+
 /** Read pnpm's `packages:` block without adding a YAML runtime dependency. */
 function readPnpmWorkspaceGlobs(root: string): string[] {
   try {
     const text = readFileSync(join(root, "pnpm-workspace.yaml"), "utf8");
-    const line = text.split(/\r?\n/).find((item) => /^\s*packages\s*:/.test(item));
-    if (!line) return [];
+    const lines = text.split(/\r?\n/);
+    const lineIndex = lines.findIndex((item) => /^\s*packages\s*:/.test(item));
+    if (lineIndex === -1) return [];
+    const line = lines[lineIndex] as string;
     const afterColon = line.slice(line.indexOf(":") + 1).trim();
     if (afterColon.startsWith("[")) {
-      const items = afterColon.slice(1, afterColon.lastIndexOf("]"));
-      return items
-        .split(",")
+      let sequence = afterColon;
+      let close = sequence.indexOf("]");
+      for (let i = lineIndex + 1; close === -1 && i < lines.length; i += 1) {
+        sequence += ` ${(lines[i] as string).replace(/\s+#.*$/, "").trim()}`;
+        close = sequence.indexOf("]");
+      }
+      if (close === -1) return [];
+      const items = sequence.slice(1, close);
+      return splitYamlFlowSequence(items)
         .map(parseYamlScalar)
         .filter((item): item is string => item !== null);
     }
     const out: string[] = [];
-    const lines = text.split(/\r?\n/);
-    for (const item of lines.slice(lines.indexOf(line) + 1)) {
+    for (const item of lines.slice(lineIndex + 1)) {
       if (item.trim() && !/^\s/.test(item)) break;
       const match = /^\s*-\s*(.*?)\s*$/.exec(item);
       if (match) {
@@ -262,9 +290,23 @@ export function resolveSpecifierDir(specifier: string, index: Map<string, string
  * is only used for element classification. Existing export targets and source
  * entry fields take precedence, with package directory as a safe fallback.
  */
+const specifierPathCache = new Map<string, string | null>();
+
 export function resolveSpecifierPath(specifier: string, index: Map<string, string>): string | null {
   const dir = resolveSpecifierDir(specifier, index);
   if (!dir) return null;
+  const cacheKey = `${dir}\0${specifier}`;
+  if (specifierPathCache.has(cacheKey)) return specifierPathCache.get(cacheKey) ?? null;
+  const result = resolveSpecifierPathUncached(specifier, dir, index);
+  specifierPathCache.set(cacheKey, result);
+  return result;
+}
+
+function resolveSpecifierPathUncached(
+  specifier: string,
+  dir: string,
+  index: Map<string, string>,
+): string {
   const packageName = [...index.keys()]
     .filter((name) => specifier === name || specifier.startsWith(`${name}/`))
     .sort((a, b) => b.length - a.length)[0];

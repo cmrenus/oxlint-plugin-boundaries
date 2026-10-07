@@ -186,7 +186,7 @@ beforeAll(() => {
   );
   writeFileSync(
     join(pnpmRoot, "pnpm-workspace.yaml"),
-    "packages:\n  - 'apps/*'\n  - 'libs/**'\n  - '!libs/**/fixtures'\n",
+    "packages: [\n  'apps/*',\n  'libs/**',\n  '!libs/**/fixtures',\n]\n",
   );
   const auditLog = join(pnpmRoot, "libs/platform/data-access/audit-log");
   mkdirSync(join(auditLog, "src"), { recursive: true });
@@ -205,6 +205,9 @@ beforeAll(() => {
     }),
   );
   writeFileSync(join(db, "src/index.ts"), "export {};\n");
+  const excluded = join(pnpmRoot, "libs/platform/data-access/fixtures");
+  mkdirSync(excluded, { recursive: true });
+  writeFileSync(join(excluded, "package.json"), JSON.stringify({ name: "@prism/fixtures" }));
 });
 
 afterAll(() => {

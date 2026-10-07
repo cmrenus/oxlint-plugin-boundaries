@@ -382,4 +382,14 @@ describe("config: validation errors (actionable, specific)", () => {
       compileConfig({ elements: [{ type: "a", pattern: [] }], rules: [], workspaceScope: "@s/" }),
     ).toThrow(/pattern/);
   });
+
+  it("explains that pattern must be a non-empty string or string array", () => {
+    expect(() =>
+      compileConfig({
+        elements: [{ type: "a", pattern: ["a/**", 42] }],
+        rules: [],
+        workspaceScope: "@s/",
+      }),
+    ).toThrow(/non-empty string or a non-empty array of non-empty strings/);
+  });
 });

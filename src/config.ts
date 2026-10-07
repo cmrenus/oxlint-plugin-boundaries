@@ -174,7 +174,9 @@ function validateElements(raw: unknown): ElementConfig[] {
         pattern.every((p) => typeof p === "string" && p !== "")
       )
     ) {
-      fail(`elements[${idx}] (type ${JSON.stringify(type)}) is missing a string \`pattern\`.`);
+      fail(
+        `elements[${idx}] (type ${JSON.stringify(type)}) must have a non-empty string or a non-empty array of non-empty strings for \`pattern\`.`,
+      );
     }
     if (seen.has(type)) fail(`duplicate element type ${JSON.stringify(type)}.`);
     seen.add(type);
