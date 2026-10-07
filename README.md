@@ -145,11 +145,11 @@ To make this work, commits must follow [Conventional Commits](https://www.conven
 
 A release only fires when at least one commit since the last release warrants one (a lone `docs:`/`chore:` push publishes nothing). The release commit is pushed back to `main` with `[skip ci]`, so it does not re-trigger the pipeline.
 
-> **Maintainer setup.** The npm scope must belong to your npm account (for `@cmrenus/...`, the account should be `cmrenus`). To migrate, log in to that account and publish the existing `0.2.0` release once from the repository root with `npm publish --access public`. This seeds npm at the existing Git tag/version; then add an npm publishing token as the `NPM_TOKEN` Actions secret in the GitHub repository for future automated releases. Consumers can install from npm without signing in or configuring a registry.
+> **Maintainer setup.** The npm scope must belong to your npm account (for `@cmrenus/...`, the account should be `cmrenus`). Add an npm publishing token as the `NPM_TOKEN` Actions secret in the GitHub repository. To seed the existing `0.2.0` release on npm, run the **CI** workflow from the `main` branch with **Publish package.json's current version directly** checked. This one-time path publishes the current version instead of asking semantic-release for a new one. Future releases publish automatically after verified pushes to `main`. Consumers can install from npm without signing in or configuring a registry.
 
 **Recovering a failed release.** `@semantic-release/git` pushes the version-bump commit during the _prepare_ step, before the npm _publish_ step. If publish fails (e.g. a bad token), the bump commit may already be on `main` while npm never received the package. Fix the cause, then re-run the **Release** workflow from the Actions tab (`workflow_dispatch`) — semantic-release is idempotent and will complete the publish for the pending version without double-releasing.
 
-**npm migration.** The `v0.2.0` release already exists on GitHub Packages and is the baseline tag for semantic-release. Publish that version to npm once as described above; subsequent release-worthy changes will publish the next version to npm (currently `0.3.0`). GitHub Packages remains available for the already-published version.
+**npm migration.** The `v0.2.0` release already exists on GitHub Packages and is the baseline tag for semantic-release. Use the one-time Actions option above to publish `0.2.0` on npm; subsequent release-worthy changes will publish the next version to npm (currently `0.3.0`). GitHub Packages remains available for the already-published version.
 
 ## License
 
