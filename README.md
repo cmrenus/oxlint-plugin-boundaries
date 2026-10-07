@@ -19,13 +19,7 @@ bun add -D @cmrenus/oxlint-plugin-boundaries
 # or: npm i -D @cmrenus/oxlint-plugin-boundaries  /  pnpm add -D @cmrenus/oxlint-plugin-boundaries
 ```
 
-This fork publishes to GitHub Packages. Configure the registry and authenticate with a GitHub personal access token (classic) that has `read:packages`:
-
-```ini
-# .npmrc
-@cmrenus:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
+This fork publishes to the public npm registry. No GitHub authentication or custom registry configuration is needed to install it.
 
 `oxlint` is a peer dependency — install it yourself and keep it within the supported range.
 
@@ -136,7 +130,7 @@ bun test
 
 ## Releasing
 
-Releases are **fully automated from commit messages** — there is no manual version bump. The [CI workflow](.github/workflows/release.yml) runs on every push to `main`: a `verify` job (type-check, lint, build, test) followed by a `release` job that only runs once `verify` is green. The `release` job runs [semantic-release](https://semantic-release.gitbook.io/semantic-release), which reads the commits since the last release, computes the next version, updates `package.json` + `CHANGELOG.md`, tags the release, publishes to GitHub Packages, and opens a GitHub Release.
+Releases are **fully automated from commit messages** — there is no manual version bump. The [CI workflow](.github/workflows/release.yml) runs on every push to `main`: a `verify` job (type-check, lint, build, test) followed by a `release` job that only runs once `verify` is green. The `release` job runs [semantic-release](https://semantic-release.gitbook.io/semantic-release), which reads the commits since the last release, computes the next version, updates `package.json` + `CHANGELOG.md`, tags the release, publishes to the public npm registry, and opens a GitHub Release.
 
 To make this work, commits must follow [Conventional Commits](https://www.conventionalcommits.org). The commit **type** decides the bump:
 
@@ -151,11 +145,11 @@ To make this work, commits must follow [Conventional Commits](https://www.conven
 
 A release only fires when at least one commit since the last release warrants one (a lone `docs:`/`chore:` push publishes nothing). The release commit is pushed back to `main` with `[skip ci]`, so it does not re-trigger the pipeline.
 
-> **Maintainer setup.** GitHub Actions publishes with its built-in `GITHUB_TOKEN` and the release job's `packages: write` permission. The first published package is private by default; change its visibility to public in the package settings if it should be installable by everyone. Consumers need a GitHub personal access token (classic) with `read:packages` to authenticate to GitHub Packages.
+> **Maintainer setup.** The npm scope must belong to your npm account (for `@cmrenus/...`, the account should be `cmrenus`). To migrate, log in to that account and publish the existing `0.2.0` release once from the repository root with `npm publish --access public`. This seeds npm at the existing Git tag/version; then add an npm publishing token as the `NPM_TOKEN` Actions secret in the GitHub repository for future automated releases. Consumers can install from npm without signing in or configuring a registry.
 
 **Recovering a failed release.** `@semantic-release/git` pushes the version-bump commit during the _prepare_ step, before the npm _publish_ step. If publish fails (e.g. a bad token), the bump commit may already be on `main` while npm never received the package. Fix the cause, then re-run the **Release** workflow from the Actions tab (`workflow_dispatch`) — semantic-release is idempotent and will complete the publish for the pending version without double-releasing.
 
-**First GitHub Packages release.** The fork retains the existing `v0.1.0` baseline tag, so semantic-release will use the commits after that tag to choose the first scoped-package version. Merging the workspace-support `feat:` change to `main` will publish `0.2.0`.
+**npm migration.** The `v0.2.0` release already exists on GitHub Packages and is the baseline tag for semantic-release. Publish that version to npm once as described above; subsequent release-worthy changes will publish the next version to npm (currently `0.3.0`). GitHub Packages remains available for the already-published version.
 
 ## License
 
