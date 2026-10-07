@@ -4,7 +4,7 @@ name: CI
 #
 #   verify  — type-check, lint, build (build folds in publint + attw), test.
 #   release — runs ONLY after verify succeeds, ONLY on push to main, and
-#             publishes to npm via semantic-release (Conventional Commits).
+#             publishes to GitHub Packages via semantic-release (Conventional Commits).
 #
 # `release` depends on `verify` with `needs:`, so publishing is impossible
 # unless tests + lints are green for the exact same commit. This replaces the
@@ -61,16 +61,12 @@ jobs:
       - name: Test
         run: bun test
 
-  # Publish to npm — gated on `verify`, and only on a real push to main (not PRs,
-  # which can't reach npm secrets anyway) or a manual dispatch. semantic-release
+  # Publish to GitHub Packages — gated on `verify`, and only on a real push to
+  # main (not PRs) or a manual dispatch. semantic-release
   # reads the commits since the last release, computes the next version (staying
   # inside 0.x — see .releaserc.json), updates package.json + CHANGELOG.md, tags
-  # the release, publishes to npm (NPM_CI_TOKEN), and opens a GitHub Release.
-  #
-  # Publishing is token-based on purpose. npm provenance would require
-  # `id-token: write` AND a Trusted Publisher configured for this package on
-  # npmjs.com — without that the publish fails — so it is left as a documented
-  # opt-in (see the "Releasing" section of the README).
+  # the release, publishes to GitHub Packages using GITHUB_TOKEN, and opens a
+  # GitHub Release.
   release:
     name: release
     needs: verify
@@ -82,6 +78,7 @@ jobs:
       contents: write # commit the version bump + CHANGELOG, push the git tag, create the GitHub Release
       issues: write # comment on issues closed by a release
       pull-requests: write # comment on PRs included in a release
+      packages: write # publish to GitHub Packages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -117,5 +114,5 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_CI_TOKEN }}
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bunx semantic-release
