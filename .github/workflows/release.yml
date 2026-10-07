@@ -16,8 +16,14 @@ on:
     branches: [main]
   pull_request:
   # Allow a manual release run from the Actions tab (e.g. to retry a failed
-  # publish) without pushing an empty commit.
+  # publish or seed the existing package version on a new registry).
   workflow_dispatch:
+    inputs:
+      publish_current_version:
+        description: Publish package.json's current version directly (one-time npm migration)
+        required: true
+        type: boolean
+        default: false
 
 # Least-privilege by default; the release job widens what it needs below.
 permissions:
@@ -71,7 +77,7 @@ jobs:
     name: release
     needs: verify
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
@@ -107,7 +113,19 @@ jobs:
       - name: Build (produce dist/ for the publish)
         run: bun run build
 
+      - name: Publish current version to npm (one-time migration)
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_current_version
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/npmrc
+        run: |
+          test -n "$NPM_TOKEN"
+          trap 'rm -f "$NPM_CONFIG_USERCONFIG"' EXIT
+          npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" --location=user
+          npm publish --access public
+
       - name: Release
+        if: github.event_name != 'workflow_dispatch' || !inputs.publish_current_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
